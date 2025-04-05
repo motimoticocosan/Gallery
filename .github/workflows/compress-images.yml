@@ -1,4 +1,4 @@
-name: Compress Images (Without WebP & Remove WebP)
+name: Compress Images (Without WebP)
 
 on:
   push:
@@ -26,15 +26,10 @@ jobs:
           # PNG圧縮 (無損失圧縮)
           find images -type f -iname "*.png" -exec optipng -o7 {} \;
 
-      - name: WebPファイルを削除
-        run: |
-          # imagesフォルダ内のWebPファイルを削除
-          find images -type f -iname "*.webp" -exec rm {} \;
-
       - name: 圧縮後のファイルをコミット & プッシュ
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
           git add images
-          git commit -m "Auto-compressed images and removed WebP files"
+          git commit -m "Auto-compressed images"
           git push
