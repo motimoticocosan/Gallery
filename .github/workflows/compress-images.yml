@@ -1,4 +1,4 @@
-name: Compress Images
+name: Compress and Delete Images
 
 on:
   push:
@@ -18,22 +18,22 @@ jobs:
       - name: ImageMagickをインストール
         run: sudo apt-get install -y imagemagick
 
-      - name: WebP用のcwebpをインストール
-        run: sudo apt-get install -y webp
-
       - name: JPEGとPNGを圧縮 & WebPに変換
         run: |
-          # PNGとJPEGを圧縮
-          find images -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" \) -exec mogrify -strip -quality 85% {} +
-          
-          # WebPに変換
-          find images -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" \) -exec sh -c 'cwebp -q 85 "$1" -o "${1%.*}.webp"' _ {} \;
+          # JPEGとPNGを圧縮
+          find images -type f -iname "*.jpg" -o -iname "*.jpeg" -exec mogrify -strip -quality 85% {} +
+          find images -type f -iname "*.png" -exec mogrify -strip -quality 85% {} +
+
+          # JPEGとPNGをWebPに変換
+          find images -type f -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -exec sh -c 'cwebp -q 85 "$1" -o "${1%.*}.webp"' _ {} \;
+
+          # 元の画像を削除
+          find images -type f -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -exec rm -f {} \;
 
       - name: 圧縮後のファイルをコミット & プッシュ
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
           git add images
-          git commit -m "Auto-compressed images"
+          git commit -m "Auto-compressed and deleted original images"
           git push
-        continue-on-error: true
