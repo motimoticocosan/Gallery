@@ -18,11 +18,16 @@ jobs:
       - name: ImageMagickをインストール
         run: sudo apt-get install -y imagemagick
 
+      - name: WebP用のcwebpをインストール
+        run: sudo apt-get install -y webp
+
       - name: JPEGとPNGを圧縮 & WebPに変換
         run: |
-          find images -type f -iname "*.jpg" -o -iname "*.jpeg" -exec mogrify -strip -quality 85% {} +
-          find images -type f -iname "*.png" -exec mogrify -strip -quality 85% {} +
-          find images -type f -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -exec sh -c 'cwebp -q 85 "$1" -o "${1%.*}.webp"' _ {} \;
+          # PNGとJPEGを圧縮
+          find images -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" \) -exec mogrify -strip -quality 85% {} +
+          
+          # WebPに変換
+          find images -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" \) -exec sh -c 'cwebp -q 85 "$1" -o "${1%.*}.webp"' _ {} \;
 
       - name: 圧縮後のファイルをコミット & プッシュ
         run: |
