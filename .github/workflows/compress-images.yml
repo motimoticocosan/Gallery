@@ -1,42 +1,29 @@
-name: Resize & Compress Images (No WebP)
+name: Compress Images (Without WebP)
 
 on:
   push:
     paths:
-      - 'images/**'
+      - 'images/**'  # imagesフォルダ以下の画像が変更されたら実行
     branches:
       - main
 
 jobs:
-  optimize:
+  compress:
     runs-on: ubuntu-latest
 
     steps:
       - name: リポジトリをチェックアウト
         uses: actions/checkout@v3
 
-      - name: ImageMagickとoptipngをインストール
+      - name: ImageMagickをインストール
+        run: sudo apt-get install -y imagemagick
+
+      - name: JPEGとPNGを圧縮
         run: |
-          sudo apt-get update
-          sudo apt-get install -y imagemagick optipng
+          # JPEG圧縮 (品質85%)
+          find images -type f -iname "*.jpg" -o -iname "*.jpeg" -exec mogrify -strip -quality 85% {} +
 
-      - name: 画像のリサイズと圧縮処理
-        run: |
-          # 長辺が2500pxを超える画像を縮小（縦横比は維持）
-          find images -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" \) | while read file; do
-            WIDTH=$(identify -format "%w" "$file")
-            HEIGHT=$(identify -format "%h" "$file")
-            LONGEST=$(($WIDTH > $HEIGHT ? $WIDTH : $HEIGHT))
-            if [ "$LONGEST" -gt 2500 ]; then
-              echo "Resizing: $file"
-              mogrify -resize 2500x2500\> "$file"
-            fi
-          done
-
-          # JPEG圧縮
-          find images -type f \( -iname "*.jpg" -o -iname "*.jpeg" \) -exec mogrify -strip -quality 85% {} +
-
-          # PNG圧縮（無損失）
+          # PNG圧縮 (無損失圧縮)
           find images -type f -iname "*.png" -exec optipng -o7 {} \;
 
       - name: 圧縮後のファイルをコミット & プッシュ
@@ -44,6 +31,5 @@ jobs:
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
           git add images
-          git commit -m "Auto-resized and compressed images"
+          git commit -m "Auto-compressed images"
           git push
-        continue-on-error: true
