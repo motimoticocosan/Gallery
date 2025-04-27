@@ -15,21 +15,40 @@ jobs:
       - name: リポジトリをチェックアウト
         uses: actions/checkout@v3
 
-      - name: ImageMagickをインストール
-        run: sudo apt-get install -y imagemagick
+      - name: ImageMagickとoptipngをインストール
+        run: sudo apt-get install -y imagemagick optipng
 
-      - name: JPEGとPNGを圧縮
+      - name: 変更された画像だけ圧縮
         run: |
-          # JPEG圧縮 (品質85%)
-          find images -type f -iname "*.jpg" -o -iname "*.jpeg" -exec mogrify -strip -quality 85% {} +
+          # 変更されたファイルリストを取得
+          git fetch origin main
+          CHANGED_FILES=$(git diff --name-only FETCH_HEAD | grep -E '\.(jpg|jpeg|png)$' || true)
 
-          # PNG圧縮 (無損失圧縮)
-          find images -type f -iname "*.png" -exec optipng -o7 {} \;
+          echo "Changed image files:"
+          echo "$CHANGED_FILES"
 
-      - name: 圧縮後のファイルをコミット & プッシュ
+          # JPEG圧縮
+          for file in $CHANGED_FILES; do
+            if [[ "$file" == *.jpg || "$file" == *.jpeg ]]; then
+              mogrify -strip -quality 85% "$file"
+            fi
+          done
+
+          # PNG圧縮
+          for file in $CHANGED_FILES; do
+            if [[ "$file" == *.png ]]; then
+              optipng -o7 "$file"
+            fi
+          done
+
+      - name: 変更があればコミット & プッシュ
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
           git add images
-          git commit -m "Auto-compressed images"
-          git push
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Auto-compressed images"
+            git push
+          fi
