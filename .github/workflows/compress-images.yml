@@ -3,7 +3,7 @@ name: Compress Images (Without WebP)
 on:
   push:
     paths:
-      - 'images/**'  # imagesフォルダ以下の画像が変更されたら実行
+      - 'images/**'
     branches:
       - main
 
@@ -18,25 +18,18 @@ jobs:
       - name: ImageMagickとoptipngをインストール
         run: sudo apt-get install -y imagemagick optipng
 
-      - name: 変更された画像だけ圧縮
+      - name: 新規追加された画像だけ圧縮
         run: |
-          # 変更されたファイルリストを取得
           git fetch origin main
-          CHANGED_FILES=$(git diff --name-only FETCH_HEAD | grep -E '\.(jpg|jpeg|png)$' || true)
+          CHANGED_FILES=$(git diff --name-only --diff-filter=A origin/main...HEAD | grep -E '\.(jpg|jpeg|png)$' || true)
 
-          echo "Changed image files:"
+          echo "Newly added image files:"
           echo "$CHANGED_FILES"
 
-          # JPEG圧縮
           for file in $CHANGED_FILES; do
             if [[ "$file" == *.jpg || "$file" == *.jpeg ]]; then
               mogrify -strip -quality 85% "$file"
-            fi
-          done
-
-          # PNG圧縮
-          for file in $CHANGED_FILES; do
-            if [[ "$file" == *.png ]]; then
+            elif [[ "$file" == *.png ]]; then
               optipng -o7 "$file"
             fi
           done
